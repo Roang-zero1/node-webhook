@@ -9,16 +9,18 @@ var spawn = require('child_process').spawn;
 var email = require('emailjs/email');
 var mailer = email.server.connect(config.email);
 var crypto = require('crypto');
+var logger = require('winston');
+logger.level = config.loglvl || 'info';
 
 function run(file, params, cb) {
   var process = spawn(file, params);
 
   process.stdout.on('data', function(data) {
-    console.log('' + data);
+    logger.info('' + data);
   });
 
   process.stderr.on('data', function(data) {
-    console.warn('' + data);
+    logger.warn('' + data);
   });
 
   process.on('exit', function(code) {
@@ -38,7 +40,7 @@ function send(body, subject, data) {
     };
     mailer.send(message, function(err) {
       if (err) {
-        console.warn(err);
+        logger.warn(err);
       }
     });
   }
@@ -57,7 +59,7 @@ function handleRequest(task, cb) {
 
   // End early if not permitted account
   if (config.accounts.indexOf(data.owner) === -1) {
-    console.log(data.owner + ' is not an authorized account.');
+    logger.info(data.owner + ' is not an authorized account.');
     if (typeof cb === 'function') {
       cb();
     }
@@ -66,7 +68,7 @@ function handleRequest(task, cb) {
 
   // End early if not permitted branch
   if (data.branch !== branch) {
-    console.log('Not ' + branch + ' branch.');
+    logger.info('Not ' + branch + ' branch.');
     if (typeof cb === 'function') {
       cb();
     }
@@ -119,7 +121,7 @@ function handleRequest(task, cb) {
   // Run build script
   run(build_script, params, function(err) {
     if (err) {
-      console.log('Failed to build: ' + data.owner + '/' + data.repo);
+      logger.info('Failed to build: ' + data.owner + '/' + data.repo);
       send('Your website at ' + data.owner + '/' + data.repo + ' failed to build.', 'Error building site', data);
 
       if (typeof cb === 'function') {
@@ -131,7 +133,7 @@ function handleRequest(task, cb) {
     // Run publish script
     run(publish_script, params, function(err) {
       if (err) {
-        console.log('Failed to publish: ' + data.owner + '/' + data.repo);
+        logger.info('Failed to publish: ' + data.owner + '/' + data.repo);
         send('Your website at ' + data.owner + '/' + data.repo + ' failed to publish.', 'Error publishing site', data);
 
         if (typeof cb === 'function') {
@@ -141,7 +143,7 @@ function handleRequest(task, cb) {
       }
 
       // Done running scripts
-      console.log('Successfully rendered: ' + data.owner + '/' + data.repo);
+      logger.info('Successfully rendered: ' + data.owner + '/' + data.repo);
       send('Your website at ' + data.owner + '/' + data.repo + ' was successfully published.', 'Successfully published site', data);
 
       if (typeof cb === 'function') {
@@ -162,7 +164,7 @@ app.use(bp.json({
     }
 
     if (!config.secret || config.secret === "") {
-      console.log("Recieved a X-Hub-Signature header, but cannot validate as no secret is configured");
+      logger.info("Recieved a X-Hub-Signature header, but cannot validate as no secret is configured");
       return;
     }
 
@@ -171,7 +173,7 @@ app.use(bp.json({
     var computed_sig = hmac.update(buffer).digest('hex');
 
     if (recieved_sig !== computed_sig) {
-      console.warn('Recieved an invalid HMAC: calculated:' + computed_sig + ' != recieved:' + recieved_sig);
+      logger.warn('Recieved an invalid HMAC: calculated:' + computed_sig + ' != recieved:' + recieved_sig);
       var err = new Error('Invalid Signature');
       err.status = 403;
       throw err;
@@ -187,11 +189,11 @@ app.post('/hooks/jekyll/:branch', function(req, res) {
   // aren't 'push'
   var ghEvent = req.get('X-GitHub-Event');
   if (ghEvent === 'ping') {
-    console.log('Received ping.');
+    logger.info('Received ping.');
     res.sendStatus(200);
     return;
   } else if (ghEvent !== 'push') {
-    console.log('Received unsupported event: ' + ghEvent);
+    logger.info('Received unsupported event: ' + ghEvent);
     res.sendStatus(400);
     return;
   }
@@ -206,6 +208,6 @@ app.post('/hooks/jekyll/:branch', function(req, res) {
 });
 
 // Start server
-var port = process.env.PORT || config.listen || 8080;
+var port = process.env.PORT || config.port || 8080;
 app.listen(port);
-console.log('Listening on port ' + port);
+logger.info('Listening on port ' + port);

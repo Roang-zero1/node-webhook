@@ -18,9 +18,10 @@
   },
   "version": "0.2.0",
   "dependencies": {
-    "express": "3.x",
+    "async": "^1.5.2",
+    "body-parser": "^1.14.2",
     "emailjs": "0.3.4",
-    "async": "^1.5.2"
+    "express": "^4.13.4"
   },
   "private": true,
   "devDependencies": {

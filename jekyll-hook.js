@@ -2,6 +2,7 @@
 
 var config = require('./config.json');
 var express = require('express');
+var bp = require('body-parser');
 var app = express();
 var async = require('async');
 var spawn = require('child_process').spawn;
@@ -154,7 +155,7 @@ function handleRequest(task, cb) {
 // Create Task Queue for Request handling
 var tasks = async.queue(handleRequest, 1);
 
-app.use(express.bodyParser({
+app.use(bp.json({
   verify: function(req, res, buffer) {
     if (!req.headers['x-hub-signature']) {
       return;
@@ -187,16 +188,16 @@ app.post('/hooks/jekyll/:branch', function(req, res) {
   var ghEvent = req.get('X-GitHub-Event');
   if (ghEvent === 'ping') {
     console.log('Received ping.');
-    res.send(200);
+    res.sendStatus(200);
     return;
   } else if (ghEvent !== 'push') {
     console.log('Received unsupported event: ' + ghEvent);
-    res.send(400);
+    res.sendStatus(400);
     return;
   }
 
   // Close connection
-  res.send(202);
+  res.sendStatus(202);
 
   // Queue request handler
   tasks.push({

@@ -22,5 +22,21 @@
     "emailjs": "0.3.4",
     "async": "^1.5.2"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "istanbul": "^0.4.2",
+    "jshint": "^2.9.1",
+    "pre-commit": "^1.1.2",
+    "request": "^2.69.0",
+    "tape": "^4.4.0"
+  },
+  "scripts": {
+    "test": "tape ./test/*.js",
+    "coverage": "istanbul cover tape ./test/*.js # disabled until tests are implemented && istanbul check-coverage --statements 100 --functions 100 --lines 100 --branches 100",
+    "jshint": "jshint -c .jshintrc --exclude-path .gitignore ."
+  },
+  "pre-commit": [
+    "jshint",
+    "coverage"
+  ]
 }

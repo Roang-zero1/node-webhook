@@ -1,4 +1,4 @@
-# jekyll-hook
+# node-webhooks
 
 A server that listens for webhook posts from GitHub, generates a website with
 Jekyll, and moves it somewhere to be published. Use this to run your own GitHub

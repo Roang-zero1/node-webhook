@@ -1,22 +1,23 @@
 {
-  "name": "jekyll-hook",
-  "description": "A server that listens for GitHub webhook posts and renders a Jekyll site",
-  "homepage": "http://github.com/developmentseed/jekyll-hook",
+  "name": "node-webhooks",
+  "description": "A server that listens for GitHub webhook posts and executes shell scripts accordingly",
+  "homepage": "https://github.com/Roang-zero1/node-webhook",
   "author": {
-    "name": "Development Seed",
-    "url": "http://developmentseed.org/",
-    "email": "info@developmentseed.org"
+    "name": "Roang-zero1",
+    "url": "http://lucas.brandstaetter.tech/",
+    "email": "contact@roang.info"
   },
   "contributors": [
+    "Lucas B <contact@roang.info>"
     "Dave Cole <dave@developmentseed.org>",
     "Alireza J <alireza@developmentseed.org>",
     "@danielfdsilva"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/developmentseed/jekyll-hook.git"
+    "url": "git@github.com:Roang-zero1/node-webhook.git"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "dependencies": {
     "async": "^1.5.2",
     "body-parser": "^1.14.2",

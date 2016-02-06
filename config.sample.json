@@ -11,10 +11,14 @@
   "secret": "",
   "email": {
     "isActivated": false,
-    "user": "",
-    "password": "",
-    "host": "",
-    "ssl": true
+    "tansport": {
+      "host": "",
+      "secure": true,
+      "auth": {
+        "user": "",
+        "pass": ""
+      }
+    }
   },
   "accounts": [
     "developmentseed"

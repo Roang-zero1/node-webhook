@@ -6,8 +6,8 @@ var bp = require('body-parser');
 var app = express();
 var async = require('async');
 var spawn = require('child_process').spawn;
-var email = require('emailjs/email');
-var mailer = email.server.connect(config.email);
+var nodemailer = require('nodemailer');
+var transporter = nodemailer.createTransport(config.email.tansport);
 var crypto = require('crypto');
 var logger = require('winston');
 logger.level = config.loglvl || 'info';
@@ -31,17 +31,19 @@ function run(file, params, cb) {
 }
 
 function send(body, subject, data) {
+  logger.log("silly",body + subject + JSON.stringify(data));
   if (config.email && config.email.isActivated && data.pusher.email) {
-    var message = {
+    var mailOptions = {
       text: body,
-      from: config.email.user,
+      from: config.email.from,
       to: data.pusher.email,
       subject: subject
     };
-    mailer.send(message, function(err) {
-      if (err) {
-        logger.warn(err);
+    transporter.sendMail(mailOptions, function(error, info) {
+      if (error) {
+        return logger.error(error);
       }
+      logger.log('debug', 'Message sent: ' + info.response);
     });
   }
 }

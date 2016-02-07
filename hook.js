@@ -12,6 +12,8 @@ var crypto = require('crypto');
 var logger = require('winston');
 logger.level = config.loglvl || 'info';
 
+module.exports = app;
+
 function run(file, params, cb) {
   var process = spawn(file, params);
 
@@ -209,7 +211,3 @@ app.post('/hooks/jekyll/:branch', function(req, res) {
   });
 });
 
-// Start server
-var port = process.env.PORT || config.port || 8080;
-app.listen(port);
-logger.info('Listening on port ' + port);

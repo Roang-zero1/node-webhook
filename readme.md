@@ -34,7 +34,7 @@ We also need Jekyll and Nginx
 
 Clone the repo
 
-    $: git clone https://github.com/developmentseed/jekyll-hook.git
+    $: git clone https://github.com/Roang-zero1/node-webhook.git1
 
 Install dependencies:
 

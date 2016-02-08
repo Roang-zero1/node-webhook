@@ -14,7 +14,7 @@ logger.level = config.loglvl || 'info';
 
 module.exports = app;
 
-function run(file, params, cb) {
+function run(file, params, callback) {
   var process = spawn(file, params);
 
   process.stdout.on('data', function(data) {
@@ -26,14 +26,13 @@ function run(file, params, cb) {
   });
 
   process.on('exit', function(code) {
-    if (typeof cb === 'function') {
-      cb(code !== 0);
+    if (typeof callback === 'function') {
+      callback(code !== 0);
     }
   });
 }
 
 function send(body, subject, data) {
-  logger.log("silly",body + subject + JSON.stringify(data));
   if (config.email && config.email.isActivated && data.pusher.email) {
     var mailOptions = {
       text: body,
@@ -50,7 +49,7 @@ function send(body, subject, data) {
   }
 }
 
-function handleRequest(task, cb) {
+function handleRequest(task, callback) {
   var req = task.req;
   var data = req.body;
   var branch = req.params[0];
@@ -64,8 +63,8 @@ function handleRequest(task, cb) {
   // End early if not permitted account
   if (config.accounts.indexOf(data.owner) === -1) {
     logger.info(data.owner + ' is not an authorized account.');
-    if (typeof cb === 'function') {
-      cb();
+    if (typeof callback === 'function') {
+      callback();
     }
     return;
   }
@@ -73,8 +72,8 @@ function handleRequest(task, cb) {
   // End early if not permitted branch
   if (data.branch !== branch) {
     logger.info('Not ' + branch + ' branch.');
-    if (typeof cb === 'function') {
-      cb();
+    if (typeof callback === 'function') {
+      callback();
     }
     return;
   }
@@ -128,8 +127,8 @@ function handleRequest(task, cb) {
       logger.info('Failed to build: ' + data.owner + '/' + data.repo);
       send('Your website at ' + data.owner + '/' + data.repo + ' failed to build.', 'Error building site', data);
 
-      if (typeof cb === 'function') {
-        cb();
+      if (typeof callback === 'function') {
+        callback();
       }
       return;
     }
@@ -140,8 +139,8 @@ function handleRequest(task, cb) {
         logger.info('Failed to publish: ' + data.owner + '/' + data.repo);
         send('Your website at ' + data.owner + '/' + data.repo + ' failed to publish.', 'Error publishing site', data);
 
-        if (typeof cb === 'function') {
-          cb();
+        if (typeof callback === 'function') {
+          callback();
         }
         return;
       }
@@ -150,8 +149,8 @@ function handleRequest(task, cb) {
       logger.info('Successfully rendered: ' + data.owner + '/' + data.repo);
       send('Your website at ' + data.owner + '/' + data.repo + ' was successfully published.', 'Successfully published site', data);
 
-      if (typeof cb === 'function') {
-        cb();
+      if (typeof callback === 'function') {
+        callback();
       }
       return;
     });
@@ -161,29 +160,39 @@ function handleRequest(task, cb) {
 // Create Task Queue for Request handling
 var tasks = async.queue(handleRequest, 1);
 
-app.use(bp.json({
-  verify: function(req, res, buffer) {
-    if (!req.headers['x-hub-signature']) {
-      return;
+function verifyGitHub(req, res, buffer,callback) {
+  if (!req.headers['x-hub-signature']) {
+    logger.silly('No GitHub signature found');
+    if (typeof callback === 'function') {
+      callback(null, 'No siganture in header');
     }
-
-    if (!config.secret || config.secret === "") {
-      logger.info("Recieved a X-Hub-Signature header, but cannot validate as no secret is configured");
-      return;
-    }
-
-    var hmac = crypto.createHmac('sha1', config.secret);
-    var recieved_sig = req.headers['x-hub-signature'].split('=')[1];
-    var computed_sig = hmac.update(buffer).digest('hex');
-
-    if (recieved_sig !== computed_sig) {
-      logger.warn('Recieved an invalid HMAC: calculated:' + computed_sig + ' != recieved:' + recieved_sig);
-      var err = new Error('Invalid Signature');
-      err.status = 403;
-      throw err;
-    }
+    return;
   }
 
+  if (!config.secret || config.secret === "") {
+    logger.warn("Recieved a X-Hub-Signature header, but cannot validate as no secret is configured");
+    if (typeof callback === 'function') {
+      callback(null, 'No secret configured');
+    }
+    return;
+  }
+
+  var hmac = crypto.createHmac('sha1', config.secret);
+  var recieved_sig = req.headers['x-hub-signature'].split('=')[1];
+  var computed_sig = hmac.update(buffer).digest('hex');
+
+  if (recieved_sig !== computed_sig) {
+    logger.warn('Recieved an invalid HMAC: calculated:' + computed_sig + ' != recieved:' + recieved_sig);
+    var err = new Error('Invalid Signature');
+    err.status = 403;
+    throw err;
+  }
+
+  logger.silly('GitHub signature successfully verified');
+}
+
+app.use(bp.json({
+  verify: verifyGitHub
 }));
 
 // Receive webhook post
@@ -210,4 +219,3 @@ app.post('/hooks/jekyll/:branch', function(req, res) {
     req: req
   });
 });
-

@@ -64,10 +64,9 @@ conf.validate({
   strict: true
 });
 
+// Load nodemail transports if reports are active
 if(conf.get('email.sendreports')){
   conf.loadFile('./config/' + env + '-transport.json');
 }
-
-console.log(conf);
 
 module.exports = conf;

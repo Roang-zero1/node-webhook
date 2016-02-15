@@ -25,7 +25,7 @@ test('Failed GitHub signature validation', function(t) {
     .end(function(err, res) {
       t.error(err, 'No error during request');
       t.equal(res.error.status, 403, 'Return status 403');
-      t.true(res.error.text.startsWith('Error: Invalid Signature'),'Return corret Error message');
+      t.true(res.error.text.startsWith('Error: Invalid Signature'),'Return correct Error message');
       t.end();
     });  
 });
@@ -62,6 +62,7 @@ test('verifyGitHub No siganture in header', function(t) {
   validate({
     headers: []
   }, null, null, function(err, data) {
+    t.error(err,'No error in signature check');
     t.equal(data, 'No siganture in header', 'No signature transmitted in header');
     t.end();
   });
@@ -77,6 +78,7 @@ test('verifyGitHub no secret configured', function(t) {
       'x-hub-signature': 'sha1=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     }
   }, null, null, function(err, data) {
+    t.error(err,'No error in signature check');
     t.equal(data, 'No secret configured', 'No signature secret configured');
     t.end();
   });

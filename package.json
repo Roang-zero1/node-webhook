@@ -32,6 +32,7 @@
     "pre-commit": "^1.1.2",
     "request": "^2.69.0",
     "rewire": "^2.5.1",
+    "supertest": "^1.1.0",
     "tape": "^4.4.0"
   },
   "scripts": {

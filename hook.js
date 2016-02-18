@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-
+"use strict";
 var config = require('./config.json');
 var express = require('express');
 var bp = require('body-parser');
@@ -15,6 +14,7 @@ logger.level = config.loglvl || 'info';
 module.exports = app;
 
 function run(file, params, callback) {
+  callback = (typeof callback === 'function') ? callback : function() {};
   var process = spawn(file, params);
 
   process.stdout.on('data', function(data) {
@@ -26,9 +26,7 @@ function run(file, params, callback) {
   });
 
   process.on('exit', function(code) {
-    if (typeof callback === 'function') {
-      callback(code !== 0);
-    }
+    callback(code !== 0);
   });
 }
 
@@ -50,6 +48,7 @@ function send(body, subject, data) {
 }
 
 function handleRequest(task, callback) {
+  callback = (typeof callback === 'function') ? callback : function() {};
   var req = task.req;
   var data = req.body;
   var branch = req.params[0];
@@ -63,18 +62,14 @@ function handleRequest(task, callback) {
   // End early if not permitted account
   if (config.accounts.indexOf(data.owner) === -1) {
     logger.info(data.owner + ' is not an authorized account.');
-    if (typeof callback === 'function') {
-      callback();
-    }
+    callback(new Error(data.owner + ' is not an authorized account.'));
     return;
   }
 
   // End early if not permitted branch
   if (data.branch !== branch) {
-    logger.info('Not ' + branch + ' branch.');
-    if (typeof callback === 'function') {
-      callback();
-    }
+    logger.info(data.branch + ' is not permitted ' + branch + ' branch.');
+    callback(new Error(data.branch + ' is not permitted ' + branch + ' branch.'));
     return;
   }
 
@@ -126,10 +121,7 @@ function handleRequest(task, callback) {
     if (err) {
       logger.info('Failed to build: ' + data.owner + '/' + data.repo);
       send('Your website at ' + data.owner + '/' + data.repo + ' failed to build.', 'Error building site', data);
-
-      if (typeof callback === 'function') {
-        callback();
-      }
+      callback(new Error('Failed to build: ' + data.owner + '/' + data.repo));
       return;
     }
 
@@ -138,20 +130,14 @@ function handleRequest(task, callback) {
       if (err) {
         logger.info('Failed to publish: ' + data.owner + '/' + data.repo);
         send('Your website at ' + data.owner + '/' + data.repo + ' failed to publish.', 'Error publishing site', data);
-
-        if (typeof callback === 'function') {
-          callback();
-        }
+        callback(new Error('Failed to publish: ' + data.owner + '/' + data.repo));
         return;
       }
 
       // Done running scripts
       logger.info('Successfully rendered: ' + data.owner + '/' + data.repo);
       send('Your website at ' + data.owner + '/' + data.repo + ' was successfully published.', 'Successfully published site', data);
-
-      if (typeof callback === 'function') {
-        callback();
-      }
+      callback();
       return;
     });
   });
@@ -160,20 +146,17 @@ function handleRequest(task, callback) {
 // Create Task Queue for Request handling
 var tasks = async.queue(handleRequest, 1);
 
-function verifyGitHub(req, res, buffer,callback) {
+function verifyGitHub(req, res, buffer, callback) {
+  callback = (typeof callback === 'function') ? callback : function() {};
   if (!req.headers['x-hub-signature']) {
     logger.silly('No GitHub signature found');
-    if (typeof callback === 'function') {
-      callback(null, 'No siganture in header');
-    }
+    callback(null, 'No siganture in header');
     return;
   }
 
   if (!config.secret || config.secret === "") {
     logger.warn("Recieved a X-Hub-Signature header, but cannot validate as no secret is configured");
-    if (typeof callback === 'function') {
-      callback(null, 'No secret configured');
-    }
+    callback(null, 'No secret configured');
     return;
   }
 

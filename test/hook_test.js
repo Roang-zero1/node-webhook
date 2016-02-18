@@ -3,6 +3,7 @@ var request = require('supertest');
 var rewire = require("rewire");
 var hook = rewire('../hook');
 
+// Test express requests
 test('Fail on GET request', function(t) {
   request(hook)
     .get('/hooks/jekyll')
@@ -25,9 +26,9 @@ test('Failed GitHub signature validation', function(t) {
     .end(function(err, res) {
       t.error(err, 'No error during request');
       t.equal(res.error.status, 403, 'Return status 403');
-      t.true(res.error.text.startsWith('Error: Invalid Signature'),'Return correct Error message');
+      t.true(res.error.text.startsWith('Error: Invalid Signature'), 'Return correct Error message');
       t.end();
-    });  
+    });
 });
 
 test('Sucessful GitHub signature validation', function(t) {
@@ -42,10 +43,38 @@ test('Sucessful GitHub signature validation', function(t) {
       t.equal(res.error.status, 400, 'Return status 400'); // No further data defined
       t.end();
     });
-  
 });
 
-test('verifyGitHub no signature', function(t) {
+test('Respond to GitHub ping', function(t) {
+  request(hook)
+    .post('/hooks/jekyll/master')
+    .set('Content-Type', 'application/json')
+    .set('X-GitHub-Event', 'ping')
+    .expect('Content-Type', 'text/plain; charset=utf-8')
+    .expect(200)
+    .end(function(err, res) {
+      t.error(err, 'No error during request');
+      t.equal(res.status, 200, 'Return status 200'); // No further data defined
+      t.end();
+    });
+});
+
+test('Respond to GitHub push', function(t) {
+  request(hook)
+    .post('/hooks/jekyll/master')
+    .set('Content-Type', 'application/json')
+    .set('X-GitHub-Event', 'push')
+    .expect('Content-Type', 'text/plain; charset=utf-8')
+    .expect(202)
+    .end(function(err, res) {
+      t.error(err, 'No error during request');
+      t.equal(res.status, 202, 'Return status 200'); // No further data defined
+      t.end();
+    });
+});
+
+// Testing verifyGitHub
+test('verifyGitHub Wrong signature', function(t) {
   var validate = hook.__get__('verifyGitHub');
   t.throws(function() {
     validate({
@@ -62,7 +91,7 @@ test('verifyGitHub No siganture in header', function(t) {
   validate({
     headers: []
   }, null, null, function(err, data) {
-    t.error(err,'No error in signature check');
+    t.error(err, 'No error in signature check');
     t.equal(data, 'No siganture in header', 'No signature transmitted in header');
     t.end();
   });
@@ -78,7 +107,7 @@ test('verifyGitHub no secret configured', function(t) {
       'x-hub-signature': 'sha1=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
     }
   }, null, null, function(err, data) {
-    t.error(err,'No error in signature check');
+    t.error(err, 'No error in signature check');
     t.equal(data, 'No secret configured', 'No signature secret configured');
     t.end();
   });

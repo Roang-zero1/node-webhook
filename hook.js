@@ -1,15 +1,19 @@
 "use strict";
 var config = require('./config.json');
+var config_js = require('./config.js');
 var express = require('express');
 var bp = require('body-parser');
 var app = express();
 var async = require('async');
 var spawn = require('child_process').spawn;
-var nodemailer = require('nodemailer');
-var transporter = nodemailer.createTransport(config.email.tansport);
+if (config_js.get('email.sendreports') && config_js.get('email.transport')) {
+  var nodemailer = require('nodemailer');
+  var transporter = nodemailer.createTransport(config_js.get('email.transport'));
+  var mail = true;
+}
 var crypto = require('crypto');
 var logger = require('winston');
-logger.level = config.loglvl || 'info';
+logger.level = config_js.get('loglvl') || 'info';
 
 module.exports = app;
 
@@ -31,10 +35,10 @@ function run(file, params, callback) {
 }
 
 function send(body, subject, data) {
-  if (config.email && config.email.isActivated && data.pusher.email) {
+  if (mail && data.pusher.email) {
     var mailOptions = {
       text: body,
-      from: config.email.from,
+      from: config_js.get('email.sender'),
       to: data.pusher.email,
       subject: subject
     };
@@ -55,9 +59,17 @@ function handleRequest(task, callback) {
   var params = [];
 
   // Parse webhook data for internal variables
-  data.repo = data.repository.name;
+  if (data.repository && data.repository.name && data.repository.owner.name) {
+    data.repo = data.repository.name;
+    data.owner = data.repository.owner.name;
+  } else {
+    if (typeof callback === 'function') {
+      callback();
+    }
+    return;
+  }
+
   data.branch = data.ref.replace('refs/heads/', '');
-  data.owner = data.repository.owner.name;
 
   // End early if not permitted account
   if (config.accounts.indexOf(data.owner) === -1) {
@@ -89,9 +101,9 @@ function handleRequest(task, callback) {
   }
 
   /* source */
-  params.push(config.temp + '/' + data.owner + '/' + data.repo + '/' + data.branch + '/' + 'code');
+  params.push(config.get('temp') + '/' + data.owner + '/' + data.repo + '/' + data.branch + '/' + 'code');
   /* build  */
-  params.push(config.temp + '/' + data.owner + '/' + data.repo + '/' + data.branch + '/' + 'site');
+  params.push(config.get('temp') + '/' + data.owner + '/' + data.repo + '/' + data.branch + '/' + 'site');
 
   // Script by branch.
   var build_script = null;

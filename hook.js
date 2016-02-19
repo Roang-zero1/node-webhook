@@ -63,9 +63,8 @@ function handleRequest(task, callback) {
     data.repo = data.repository.name;
     data.owner = data.repository.owner.name;
   } else {
-    if (typeof callback === 'function') {
-      callback();
-    }
+    logger.warn('Request data incomplete');
+    callback(new Error('Request data incomplete'));
     return;
   }
 

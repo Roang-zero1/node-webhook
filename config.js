@@ -1,6 +1,9 @@
 var convict = require('convict');
+var fs = require('fs');
+var path = require('path');
+var logger = require('winston');
 
-// Define a schema
+// Define tha basic schema
 var conf = convict({
   env: {
     doc: "The applicaton environment.",
@@ -57,7 +60,9 @@ var conf = convict({
 
 // Load environment dependent configuration
 var env = conf.get('env');
-conf.loadFile('./config/' + env + '.json');
+var confpath = (env === 'test') ? './test/config/' : './config/';
+logger.level = conf.get('loglvl') || 'info';
+conf.loadFile(confpath + env + '.json');
 
 // Perform validation
 conf.validate({
@@ -65,8 +70,28 @@ conf.validate({
 });
 
 // Load nodemail transports if reports are active
-if(conf.get('email.sendreports')){
-  conf.loadFile('./config/' + env + '-transport.json');
+if (conf.get('email.sendreports')) {
+  conf.loadFile(confpath + env + '-transport.json');
 }
+
+// Load repository config
+
+var repos = {};
+
+var repofiles = fs.readdirSync(confpath + '/repos/');
+repofiles.forEach(function(filename) {
+  var ext = path.extname(filename);
+  if (ext === '.json') {
+    try {
+      var repo = JSON.parse(fs.readFileSync(confpath + 'repos/' + filename, 'utf8'));
+      repos[path.basename(filename, ext)] = repo;
+    } catch (ex) {
+      logger.error('Invalid repository config found: ', filename);
+    }
+  } else {
+logger.error('Invalid extension for configuration file: ', filename);
+  }
+});
+conf.set('repos',repos);
 
 module.exports = conf;

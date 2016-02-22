@@ -11,9 +11,12 @@ if (config_js.get('email.sendreports') && config_js.get('email.transport')) {
   var transporter = nodemailer.createTransport(config_js.get('email.transport'));
   var mail = true;
 }
+else{
+  var mail = false;
+}
 var crypto = require('crypto');
 var logger = require('winston');
-logger.level = config_js.get('loglvl') || 'info';
+logger.level = config_js.get('loglvl');
 
 module.exports = app;
 

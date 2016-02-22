@@ -14,13 +14,13 @@ var conf = convict({
   port: {
     doc: "The port to bind.",
     format: "port",
-    default: 0,
+    default: 8080,
     env: "PORT"
   },
   loglvl: {
     doc: "Level of log detail",
     format: String,
-    default: 'warn'
+    default: 'info'
   },
   temp: {
     doc: "Directory for temporary repository clones",
@@ -60,9 +60,8 @@ var conf = convict({
 
 // Load environment dependent configuration
 var env = conf.get('env');
-var confpath = (env === 'test') ? './test/config/' : './config/';
-logger.level = conf.get('loglvl') || 'info';
-conf.loadFile(confpath + env + '.json');
+logger.level = conf.get('loglvl');
+conf.loadFile('./config/' + env + '.json');
 
 // Perform validation
 conf.validate({
@@ -70,28 +69,36 @@ conf.validate({
 });
 
 // Load nodemail transports if reports are active
+/* istanbul ignore next: No transport needed without mails */
 if (conf.get('email.sendreports')) {
-  conf.loadFile(confpath + env + '-transport.json');
+  conf.loadFile('./config/' + env + '-transport.json');
 }
 
 // Load repository config
 
 var repos = {};
 
-var repofiles = fs.readdirSync(confpath + '/repos/');
+if (env !== "test") {
+  var repopath = './config/repos/';
+} else {
+  var repopath = './config/test-repos/';
+}
+
+var repofiles = fs.readdirSync(repopath);
+
 repofiles.forEach(function(filename) {
   var ext = path.extname(filename);
   if (ext === '.json') {
     try {
-      var repo = JSON.parse(fs.readFileSync(confpath + 'repos/' + filename, 'utf8'));
+      var repo = JSON.parse(fs.readFileSync(repopath + filename, 'utf8'));
       repos[path.basename(filename, ext)] = repo;
     } catch (ex) {
       logger.error('Invalid repository config found: ', filename);
     }
   } else {
-logger.error('Invalid extension for configuration file: ', filename);
+    logger.error('Invalid extension for configuration file: ', filename);
   }
 });
-conf.set('repos',repos);
+conf.set('repos', repos);
 
 module.exports = conf;

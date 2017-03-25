@@ -1,5 +1,7 @@
 # node-webhooks
 
+_**THIS PROJECT IS NOT IN ACTIVE DEVELOPMENT**_
+
 A server that listens for webhook posts from GitHub, generates a website with
 Jekyll, and moves it somewhere to be published. Use this to run your own GitHub
 Pages-style web server. Great for when you need to serve your websites behind a
